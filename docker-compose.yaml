@@ -1,0 +1,21 @@
+services:
+  api:
+    container_name: api
+    build:
+      context: .
+      dockerfile: ./.docker/services/api/Dockerfile
+    depends_on:
+      - postgres
+    env_file:
+      - ./.env
+    volumes:
+      - ./:/app
+    restart: always
+  postgres:
+    build:
+      context: .
+      dockerfile: .docker/services/postgres/Dockerfile
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:
