@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Hyp9r/sequncer/domain/sequence"
+	sequenceInfra "github.com/Hyp9r/sequncer/infrastructure/sequence"
+	sequenceTransport "github.com/Hyp9r/sequncer/transport/sequence"
 	"github.com/Netflix/go-env"
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog"
@@ -36,7 +39,14 @@ func main() {
 	}
 	defer db.Close()
 
+	// initialize concrete db implementations
+	sequenceRepo := sequenceInfra.NewSequenceRepository(db, &logger)
+
+	// initalize service
+	sequenceService := sequence.NewSequenceService(sequenceRepo)
+
 	router := http.NewServeMux()
+	sequenceTransport.NewController(router, sequenceService)
 
 	server := http.Server{
 		Addr:    fmt.Sprintf(":%s", Cfg.Port),
