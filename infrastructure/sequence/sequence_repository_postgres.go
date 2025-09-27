@@ -139,3 +139,19 @@ func (r *SequenceRepository) UpdateStep(ctx context.Context, sequenceID string, 
 	}
 	return nil
 }
+
+func (sr *SequenceRepository) DeleteStep(ctx context.Context, sequenceID, stepID string) error {
+	res, err := sr.db.ExecContext(ctx,
+		"DELETE FROM sequence_steps WHERE id=$1 AND sequence_id=$2",
+		stepID, sequenceID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return errors.New("step not found")
+	}
+	return nil
+}

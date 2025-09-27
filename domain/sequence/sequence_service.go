@@ -8,6 +8,7 @@ import (
 type SequencePersister interface {
 	Persist(ctx context.Context, sequence *Sequence) error
 	UpdateStep(ctx context.Context, sequenceID string, step Step) error
+	DeleteStep(ctx context.Context, sequenceID, stepID string) error
 }
 
 type SequenceReader interface {
@@ -65,4 +66,17 @@ func (s *SequenceService) UpdateStep(ctx context.Context, cmd UpdateStepCommand)
 	}
 
 	return s.repo.UpdateStep(ctx, seq.ID, *step)
+}
+
+func (s *SequenceService) DeleteStep(ctx context.Context, cmd DeleteStepCommand) error {
+	seq, err := s.repo.GetByID(ctx, cmd.SequenceID)
+	if err != nil {
+		return err
+	}
+
+	if err := seq.DeleteStep(cmd.StepID); err != nil {
+		return err
+	}
+
+	return s.repo.DeleteStep(ctx, seq.ID, cmd.StepID)
 }

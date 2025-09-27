@@ -55,6 +55,23 @@ func (s *Sequence) UpdateStep(stepID string, subject, content *string) error {
 	return nil
 }
 
+func (s *Sequence) DeleteStep(stepID string) error {
+	index := -1
+	for i, st := range s.Steps {
+		if st.ID == stepID {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return errors.New("step not found")
+	}
+
+	s.Steps = append(s.Steps[:index], s.Steps[index+1:]...)
+	return nil
+}
+
 func (s *Sequence) findStep(stepID string) *Step {
 	for i := range s.Steps {
 		if s.Steps[i].ID == stepID {

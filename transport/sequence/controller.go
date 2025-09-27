@@ -23,4 +23,5 @@ func NewController(router *http.ServeMux, sequenceService *sequence.SequenceServ
 func (c *Controller) registerRoutes() {
 	c.router.HandleFunc("POST /sequences", c.createSequenceHandler)
 	c.router.HandleFunc("PATCH /sequences/{ID}/steps/{stepID}", c.updateSequenceStepHandler)
+	c.router.HandleFunc("DELETE /sequences/{ID}/steps/{stepID}", c.deleteStepHandler)
 }

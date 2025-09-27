@@ -18,3 +18,8 @@ type UpdateStepCommand struct {
 	Subject    *string
 	Content    *string
 }
+
+type DeleteStepCommand struct {
+	SequenceID string
+	StepID     string
+}
