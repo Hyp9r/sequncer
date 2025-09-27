@@ -3,6 +3,7 @@ package sequence
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/Hyp9r/sequncer/domain/sequence"
 	"github.com/rs/zerolog"
@@ -19,6 +20,8 @@ func NewSequenceRepository(db *sql.DB, logger *zerolog.Logger) *SequenceReposito
 		logger: logger,
 	}
 }
+
+var _ sequence.SequenceRepository = (*SequenceRepository)(nil)
 
 func (sr *SequenceRepository) Persist(ctx context.Context, sequence *sequence.Sequence) error {
 	tx, err := sr.db.BeginTx(ctx, nil)
@@ -45,4 +48,94 @@ func (sr *SequenceRepository) Persist(ctx context.Context, sequence *sequence.Se
 		}
 	}
 	return tx.Commit()
+}
+
+func (sr *SequenceRepository) GetByID(ctx context.Context, ID string) (*sequence.Sequence, error) {
+	rows, err := sr.db.QueryContext(ctx, `
+		SELECT
+			s.id AS sequence_id,
+			s.name,
+			s.open_tracking_enabled,
+			s.click_tracking_enabled,
+			st.id AS step_id,
+			st.step_number,
+			st.subject,
+			st.content
+		FROM sequences s
+		LEFT JOIN sequence_steps st ON st.sequence_id = s.id
+		WHERE s.id = $1
+		ORDER BY st.step_number ASC
+	`, ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var seq *sequence.Sequence
+	steps := []sequence.Step{}
+
+	for rows.Next() {
+		var (
+			sequenceID string
+			name       string
+			openTrack  bool
+			clickTrack bool
+			stepID     sql.NullString
+			stepOrder  sql.NullInt32
+			subject    sql.NullString
+			content    sql.NullString
+		)
+
+		if err := rows.Scan(&sequenceID, &name, &openTrack, &clickTrack,
+			&stepID, &stepOrder, &subject, &content); err != nil {
+			return nil, err
+		}
+
+		if seq == nil {
+			seq = &sequence.Sequence{
+				ID:                   sequenceID,
+				Name:                 name,
+				OpenTrackingEnabled:  openTrack,
+				ClickTrackingEnabled: clickTrack,
+			}
+		}
+
+		if stepID.Valid {
+			steps = append(steps, sequence.Step{
+				ID:         stepID.String,
+				StepNumber: int(stepOrder.Int32),
+				Subject:    subject.String,
+				Content:    content.String,
+			})
+		}
+	}
+
+	if seq == nil {
+		return nil, errors.New("sequence not found")
+	}
+
+	seq.Steps = steps
+	return seq, nil
+}
+
+func (r *SequenceRepository) UpdateStep(ctx context.Context, sequenceID string, step sequence.Step) error {
+	res, err := r.db.ExecContext(ctx,
+		`UPDATE sequence_steps
+		 SET subject = COALESCE($1, subject),
+		     content = COALESCE($2, content)
+		 WHERE id = $3 AND sequence_id = $4`,
+		step.Subject,
+		step.Content,
+		step.ID,
+		sequenceID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return errors.New("step not found")
+	}
+	return nil
 }

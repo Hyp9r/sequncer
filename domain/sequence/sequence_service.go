@@ -5,17 +5,27 @@ import (
 	"errors"
 )
 
-type sequencePersister interface {
+type SequencePersister interface {
 	Persist(ctx context.Context, sequence *Sequence) error
+	UpdateStep(ctx context.Context, sequenceID string, step Step) error
+}
+
+type SequenceReader interface {
+	GetByID(ctx context.Context, id string) (*Sequence, error)
+}
+
+type SequenceRepository interface {
+	SequencePersister
+	SequenceReader
 }
 
 type SequenceService struct {
-	persister sequencePersister
+	repo SequenceRepository
 }
 
-func NewSequenceService(persister sequencePersister) *SequenceService {
+func NewSequenceService(repo SequenceRepository) *SequenceService {
 	return &SequenceService{
-		persister: persister,
+		repo: repo,
 	}
 }
 
@@ -36,5 +46,23 @@ func (s *SequenceService) Create(ctx context.Context, cmd CreateSequenceCommand)
 		}
 	}
 	sequence := NewSequence(cmd.Name, cmd.OpenTrackingEnabled, cmd.ClickTrackingEnabled, steps)
-	return s.persister.Persist(ctx, sequence)
+	return s.repo.Persist(ctx, sequence)
+}
+
+func (s *SequenceService) UpdateStep(ctx context.Context, cmd UpdateStepCommand) error {
+	seq, err := s.repo.GetByID(ctx, cmd.SequenceID)
+	if err != nil {
+		return err
+	}
+
+	if err := seq.UpdateStep(cmd.StepID, cmd.Subject, cmd.Content); err != nil {
+		return err
+	}
+
+	step := seq.findStep(cmd.StepID)
+	if step == nil {
+		return errors.New("step not found in sequence")
+	}
+
+	return s.repo.UpdateStep(ctx, seq.ID, *step)
 }

@@ -11,3 +11,10 @@ type CreateStep struct {
 	Subject string
 	Content string
 }
+
+type UpdateStepCommand struct {
+	SequenceID string
+	StepID     string
+	Subject    *string
+	Content    *string
+}
