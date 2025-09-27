@@ -24,4 +24,6 @@ func (c *Controller) registerRoutes() {
 	c.router.HandleFunc("POST /sequences", c.createSequenceHandler)
 	c.router.HandleFunc("PATCH /sequences/{ID}/steps/{stepID}", c.updateSequenceStepHandler)
 	c.router.HandleFunc("DELETE /sequences/{ID}/steps/{stepID}", c.deleteStepHandler)
+	c.router.HandleFunc("PATCH /sequences/{ID}/tracking/open", c.updateOpenTrackingHandler)
+	c.router.HandleFunc("PATCH /sequences/{ID}/tracking/click", c.updateClickTrackingHandler)
 }

@@ -9,6 +9,7 @@ type SequencePersister interface {
 	Persist(ctx context.Context, sequence *Sequence) error
 	UpdateStep(ctx context.Context, sequenceID string, step Step) error
 	DeleteStep(ctx context.Context, sequenceID, stepID string) error
+	UpdateTracking(ctx context.Context, sequence *Sequence) error
 }
 
 type SequenceReader interface {
@@ -79,4 +80,24 @@ func (s *SequenceService) DeleteStep(ctx context.Context, cmd DeleteStepCommand)
 	}
 
 	return s.repo.DeleteStep(ctx, seq.ID, cmd.StepID)
+}
+
+func (s *SequenceService) UpdateOpenTracking(ctx context.Context, sequenceID string, enabled bool) error {
+	seq, err := s.repo.GetByID(ctx, sequenceID)
+	if err != nil {
+		return err
+	}
+
+	seq.UpdateTracking(&enabled, nil)
+	return s.repo.UpdateTracking(ctx, seq)
+}
+
+func (s *SequenceService) UpdateClickTracking(ctx context.Context, sequenceID string, enabled bool) error {
+	seq, err := s.repo.GetByID(ctx, sequenceID)
+	if err != nil {
+		return err
+	}
+
+	seq.UpdateTracking(nil, &enabled)
+	return s.repo.UpdateTracking(ctx, seq)
 }

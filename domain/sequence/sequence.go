@@ -72,6 +72,15 @@ func (s *Sequence) DeleteStep(stepID string) error {
 	return nil
 }
 
+func (s *Sequence) UpdateTracking(openTracking, clickTracking *bool) {
+	if openTracking != nil {
+		s.OpenTrackingEnabled = *openTracking
+	}
+	if clickTracking != nil {
+		s.ClickTrackingEnabled = *clickTracking
+	}
+}
+
 func (s *Sequence) findStep(stepID string) *Step {
 	for i := range s.Steps {
 		if s.Steps[i].ID == stepID {

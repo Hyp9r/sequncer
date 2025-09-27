@@ -155,3 +155,24 @@ func (sr *SequenceRepository) DeleteStep(ctx context.Context, sequenceID, stepID
 	}
 	return nil
 }
+
+func (sr *SequenceRepository) UpdateTracking(ctx context.Context, seq *sequence.Sequence) error {
+	res, err := sr.db.ExecContext(ctx,
+		`UPDATE sequences
+		 SET open_tracking_enabled = $1,
+		     click_tracking_enabled = $2
+		 WHERE id = $3`,
+		seq.OpenTrackingEnabled,
+		seq.ClickTrackingEnabled,
+		seq.ID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return errors.New("sequence not found")
+	}
+	return nil
+}
