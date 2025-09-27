@@ -6,6 +6,7 @@ require github.com/rs/zerolog v1.34.0
 
 require (
 	github.com/Netflix/go-env v0.1.2
+	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect

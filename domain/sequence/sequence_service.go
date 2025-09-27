@@ -1,9 +1,12 @@
 package sequence
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type sequencePersister interface {
-	Persist(sequence *Sequence) error
+	Persist(ctx context.Context, sequence *Sequence) error
 }
 
 type SequenceService struct {
@@ -16,9 +19,22 @@ func NewSequenceService(persister sequencePersister) *SequenceService {
 	}
 }
 
-func (s *SequenceService) CreateSequence(sequence *Sequence) error {
-	if sequence.Name == "" {
+func (s *SequenceService) Create(ctx context.Context, cmd CreateSequenceCommand) error {
+	if cmd.Name == "" {
 		return errors.New("sequence name cannot be empty")
 	}
-	return s.persister.Persist(sequence)
+	steps := make([]Step, len(cmd.Steps))
+	for i, st := range cmd.Steps {
+		if st.Subject == "" && st.Content == "" {
+			return errors.New("step must have subject or content")
+		}
+		steps[i] = Step{
+			ID:         "",
+			Subject:    st.Subject,
+			Content:    st.Content,
+			StepNumber: i,
+		}
+	}
+	sequence := NewSequence(cmd.Name, cmd.OpenTrackingEnabled, cmd.ClickTrackingEnabled, steps)
+	return s.persister.Persist(ctx, sequence)
 }

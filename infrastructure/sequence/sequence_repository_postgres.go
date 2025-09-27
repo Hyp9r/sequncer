@@ -1,6 +1,7 @@
 package sequence
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/Hyp9r/sequncer/domain/sequence"
@@ -19,12 +20,29 @@ func NewSequenceRepository(db *sql.DB, logger *zerolog.Logger) *SequenceReposito
 	}
 }
 
-func (sr *SequenceRepository) Persist(sequence *sequence.Sequence) error {
-	query := `INSERT INTO sequences (name, open_tracking_enabled, click_tracking_enabled) VALUES ($1, $2, $3)`
-	_, err := sr.db.Exec(query, sequence.Name, sequence.OpenTrackingEnabled, sequence.ClickTrackingEnabled)
+func (sr *SequenceRepository) Persist(ctx context.Context, sequence *sequence.Sequence) error {
+	tx, err := sr.db.BeginTx(ctx, nil)
 	if err != nil {
-		sr.logger.Error().Err(err).Msg("Failed to persist sequence")
 		return err
 	}
-	return nil
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	query := `INSERT INTO sequences (id, name, open_tracking_enabled, click_tracking_enabled) VALUES ($1, $2, $3, $4)`
+
+	_, err = tx.ExecContext(ctx, query, sequence.ID, sequence.Name, sequence.OpenTrackingEnabled, sequence.ClickTrackingEnabled)
+	if err != nil {
+		sr.logger.Error().Err(err).Msg("failed to persist sequence")
+		return err
+	}
+
+	stepQuery := `INSERT INTO sequence_steps (id, sequence_id, subject, content, step_number) VALUES ($1, $2, $3, $4, $5)`
+	for _, s := range sequence.Steps {
+		_, err := tx.ExecContext(ctx, stepQuery, s.ID, sequence.ID, s.Subject, s.Content, s.StepNumber)
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }

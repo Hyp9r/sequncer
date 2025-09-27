@@ -8,6 +8,8 @@ import (
 )
 
 func (c *Controller) createSequenceHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	var req CreateSequenceRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -15,9 +17,21 @@ func (c *Controller) createSequenceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	sequence := sequence.NewSequence(req.Name, req.OpenTrackingEnabled, req.ClickTrackingEnabled)
+	cmd := sequence.CreateSequenceCommand{
+		Name:                 req.Name,
+		OpenTrackingEnabled:  req.OpenTrackingEnabled,
+		ClickTrackingEnabled: req.ClickTrackingEnabled,
+		Steps:                make([]sequence.CreateStep, len(req.Steps)),
+	}
 
-	err = c.sequenceService.CreateSequence(sequence)
+	for i, s := range req.Steps {
+		cmd.Steps[i] = sequence.CreateStep{
+			Subject: s.Subject,
+			Content: s.Content,
+		}
+	}
+
+	err = c.sequenceService.Create(ctx, cmd)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

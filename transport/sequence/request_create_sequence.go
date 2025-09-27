@@ -1,7 +1,13 @@
 package sequence
 
 type CreateSequenceRequest struct {
-	Name                 string `json:"name"`
-	OpenTrackingEnabled  bool   `json:"open_tracking_enabled"`
-	ClickTrackingEnabled bool   `json:"click_tracking_enabled"`
+	Name                 string         `json:"name"`
+	OpenTrackingEnabled  bool           `json:"open_tracking_enabled"`
+	ClickTrackingEnabled bool           `json:"click_tracking_enabled"`
+	Steps                []SequenceStep `json:"steps"`
+}
+
+type SequenceStep struct {
+	Subject string `json:"subject"`
+	Content string `json:"content"`
 }
